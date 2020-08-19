@@ -17,7 +17,7 @@ class Settings():
         self.ball_height = 15
         self.ball_color = (randint(0, 255), randint(0, 255), randint(0, 255))
         self.ball_allowed = 5
-        self.speed_ball = 10
+        self.speed_ball =  10
         self.speed_player = 5
         self.player_limit = 5
         self.fps = 60
