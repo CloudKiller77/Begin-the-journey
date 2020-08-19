@@ -1,0 +1,300 @@
+import pygame
+import sys
+from time import sleep
+from pygame.sprite import Sprite
+from pygame.sprite import Group
+import pygame.font
+from random import randint, randrange
+
+
+class Settings():
+    def __init__(self,):
+        self.x = 1000
+        self.y = 700
+        self.image_width = 60
+        self.image_height = 71
+        self.ball_width = 15
+        self.ball_height = 15
+        self.ball_color = (randint(0, 255), randint(0, 255), randint(0, 255))
+        self.ball_allowed = 5
+        self.speed_ball = 10
+        self.speed_player = 5
+        self.player_limit = 5
+        self.fps = 60
+
+
+
+class Player():
+    def __init__(self, ai_settings, screen):
+        self.ai_settings = ai_settings
+        self.screen = screen
+        self.walkRight = [pygame.image.load("спрайты/pygame_right_1.png"),
+                          pygame.image.load("спрайты/pygame_right_2.png"),
+                          pygame.image.load("спрайты/pygame_right_3.png"),
+                          pygame.image.load("спрайты/pygame_right_4.png"),
+                          pygame.image.load("спрайты/pygame_right_5.png"),
+                          pygame.image.load("спрайты/pygame_right_6.png")]
+        self.walkLeft = [pygame.image.load("спрайты/pygame_left_1.png"),
+                         pygame.image.load("спрайты/pygame_left_2.png"),
+                         pygame.image.load("спрайты/pygame_left_3.png"),
+                         pygame.image.load("спрайты/pygame_left_4.png"),
+                         pygame.image.load("спрайты/pygame_left_5.png"),
+                         pygame.image.load("спрайты/pygame_left_6.png")]
+        self.playerStand = pygame.image.load("спрайты/pygame_idle.png")
+        self.x = 500
+        self.y = 536
+        self.width = ai_settings.image_width
+        self.height = ai_settings.image_height
+        self.right = False
+        self.left = False
+        self.jumpCount = False
+        self.animCount = 0
+        self.jump_player = 10
+
+
+    def motion_player(self):
+        """Движение игрока(вправо, влево)"""
+        if self.right and self.x <= 1000 - self.width:
+            self.x += ai_settings.speed_player
+        if self.left and self.x > 0:
+            self.x -= ai_settings.speed_player
+        # if self.jumpCount and self.jump_player >= -15:
+        #     if self.jump_player < 0:
+        #         self.y += (self.jump_player ** 2) / 2
+        #     self.y -= (self.jump_player ** 2) / 2
+        #     self.jump_player -= 1
+        # else:
+        #     self.jumpCount = False
+        #     self.jump_player = 15
+
+
+
+    def blitme(self):
+
+        if self.animCount >= 30:
+            self.animCount = 0
+        if self.left:
+            screen.blit(self.walkLeft[self.animCount // 5], (self.x, self.y))
+            self.animCount += 1
+        elif self.right:
+            screen.blit(self.walkRight[self.animCount // 5], (self.x, self.y))
+            self.animCount += 1
+        else:
+            screen.blit(self.playerStand, (self.x, self.y))
+
+
+
+class Ball(Sprite):
+    def __init__(self, ai_settings, screen):
+        super().__init__()
+        self.ai_settings = ai_settings
+        self.screen = screen
+        self.y = 20
+        self.x = randint(10, 1000)
+        self.rect = pygame.Rect(self.x, self.y, ai_settings.ball_width, ai_settings.ball_height)
+        self.ball_width = self.rect.width
+        self.ball_height = self.rect.height
+        self.color = ai_settings.ball_color
+        self.ball_speed = ai_settings.speed_ball
+        self.ball_x = 7
+        self.ball_y = 7
+
+    def moving_ball(self):
+        self.y += self.ball_y
+        if self.y >= randint(545, 565) or self.y < 0:
+            self.ball_y = -self.ball_y
+        self.x += self.ball_x
+        if self.x >= 1000 or self.x < 0:
+            self.ball_x = -self.ball_x
+        self.rect = self.x
+        self.rect = self.y
+
+
+    def draw_ball(self):
+        pygame.draw.circle(self.screen, self.color, (self.x, self.y), 15)
+
+
+class GameStart():
+    """Инициализирует игровую статистику."""
+    def __init__(self, ai_settings):
+        self.ai_settings = ai_settings
+        self.reset_stats()
+        self.game_active = False
+        self.score = 0
+
+    def reset_stats(self):
+        self.player_active = self.ai_settings.player_limit
+
+
+class ButtonStart():
+    """Кнопка старт игры."""
+    def __init__(self, ai_settings, screen, message):
+        self.screen = screen
+        self.screen_rect = self.screen.get_rect()
+        self.width, self.height = 180, 40
+        self.button_color = (0, 110, 255)
+        self.text_color = (0, 255, 0)
+        self.text_font = pygame.font.SysFont(None, 40)
+        self.rect = pygame.Rect(0, 0, self.width, self.height)
+        self.rect.center = self.screen_rect.center
+        self.prep_msg(message)
+
+    def prep_msg(self, message):
+        self.message_image = self.text_font.render(message, True, self.text_color, self.button_color)
+        self.message_image_rect = self.message_image.get_rect()
+        self.message_image_rect.center = self.rect.center
+
+    def draw_button(self):
+        self.screen.fill(self.button_color, self.rect)
+        self.screen.blit(self.message_image, self.message_image_rect)
+
+
+class Scorepoints():
+    """Инициализирует подсчет очков в игре."""
+    def __init__(self, ai_settings, screen, stats):
+        self.ai_settings = ai_settings
+        self.stats = stats
+        self.screen = screen
+        self.screen_rect = self.screen.get_rect()
+        self.text_color = (50, 80, 250)
+        self.text_font = pygame.font.SysFont(None, 40)
+        self.image_score()
+
+    def image_score(self):
+        score_str = str(self.stats.score)
+        score_str_rnd = f"Шары - {score_str}"
+        self.score_image = self.text_font.render(score_str_rnd, True, self.text_color, background)
+        self.score_rect = self.score_image.get_rect()
+        self.score_rect.right = self.screen_rect.right - 20
+        self.score_rect.bottom = 680
+
+    def blit_score(self):
+        self.screen.blit(self.score_image, self.score_rect)
+
+class BallBomber(Sprite):
+    pass
+
+#________________________________________Механика игры________________________________________
+
+
+def keydown_events(ai_settings, screen, event, player):
+    """Реагирует на нажатие клавиш."""
+    if event.key == pygame.K_RIGHT:
+        player.right = True
+        player.left = False
+        player.animCount += 1
+    elif event.key == pygame.K_LEFT:
+        player.left = True
+        player.right = False
+        player.animCount += 1
+    elif event.key == pygame.K_p:
+        start_game(ai_settings, screen, collected_balls, stats)
+    # elif event.key == pygame.K_SPACE:
+    #     create_ball(ai_settings, screen)
+    elif event.key == pygame.K_UP:
+        player.y -= (player.jump_player ** 2) / 2
+
+
+
+def keyup_events(ai_settings, event, player):
+    """Реагирует на отпускание клавиш."""
+    if event.key == pygame.K_RIGHT:
+        player.right = False
+        player.animCount = 0
+    elif event.key == pygame.K_LEFT:
+        player.left = False
+        player.animCount = 0
+    elif event.key == pygame.K_UP:
+        player.y += (player.jump_player ** 2) / 2
+
+
+def start_game(ai_settings, screen, collected_balls, stats):
+    stats.game_active = True
+    create_ball(ai_settings, screen)
+    check_collision(balls, player, collected_balls)
+    check_collected_balls(collected_balls)
+
+
+
+def create_ball(ai_settings, screen):
+    if len(balls) < ai_settings.ball_allowed:
+        ball = Ball(ai_settings, screen)
+        balls.add(ball)
+        if len(balls) < 1:
+            ai_settings.ball_allowed = ai_settings.ball_allowed + 2
+            if len(balls) < ai_settings.ball_allowed:
+                ball = Ball(ai_settings, screen)
+                balls.add(ball)
+
+
+def check_collected_balls(collected_balls):
+    collected_balls = len(collected_balls)
+    if collected_balls > 0:
+        stats.score = collected_balls
+        spoint.image_score()
+    print(f"Вы набрали: {collected_balls} очков!")
+
+
+def check_collision(balls, player, collected_balls):
+    for ball in balls:
+        if ball.x + ball.ball_width >= player.x + 20 >= ball.x:
+            if ball.y + ball.ball_height >= player.y:
+                print("Ball hit!!!!")
+                balls.remove(ball)
+                collected_balls.append(ball)
+    return False
+
+
+def check_events(screen, player):
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            sys.exit()
+        elif event.type == pygame.KEYDOWN:
+            keydown_events(ai_settings, screen, event, player)
+        elif event.type == pygame.KEYUP:
+            keyup_events(ai_settings, event, player)
+
+
+
+def draw_window(ai_settings, screen, player, balls, play_button):
+    screen.blit(background, (0, 0))
+    for ball in balls.sprites():
+        ball.draw_ball()
+    player.blitme()
+    spoint.blit_score()
+    if not stats.game_active:
+        play_button.draw_button()
+    pygame.display.update()
+
+#______________________________________Инициализация игры________________________________________
+
+
+pygame.init()
+ai_settings = Settings()
+screen = pygame.display.set_mode((ai_settings.x, ai_settings.y))
+pygame.display.set_caption("Ball catcher")
+background = pygame.image.load("спрайты/bg1.png")
+background = pygame.transform.scale(background, (ai_settings.x, ai_settings.y))
+stats = GameStart(ai_settings)
+play_button = ButtonStart(ai_settings, screen, "Играть !!!")
+spoint = Scorepoints(ai_settings, screen, stats)
+ball = Ball(ai_settings, screen)
+balls = Group()
+collected_balls = []
+player = Player(ai_settings, screen)
+clock = pygame.time.Clock()
+
+
+
+
+while True:
+    clock.tick(ai_settings.fps)
+    check_events(screen, player)
+    if stats.game_active:
+        player.motion_player()
+        create_ball(ai_settings, screen)
+        for ball in balls.sprites():
+            ball.moving_ball()
+        check_collision(balls, player, collected_balls)
+        check_collected_balls(collected_balls)
+    draw_window(ai_settings, screen, player, balls, play_button)
